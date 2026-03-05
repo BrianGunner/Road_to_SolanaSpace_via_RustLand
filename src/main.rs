@@ -31,6 +31,41 @@ impl BankAccount{
     fn freeze(&mut self){
         self.status=AccountStatus::Frozen
     }
+
+    fn unfreeze(&mut self){
+        self.status = AccountStatus::Active
+    }
+
+    fn status_message(&self)->&str{
+        match self.status{
+            AccountStatus::Active=>"Account is active",
+            AccountStatus::Frozen=>"Account is frozen",
+            _=>"Account is inactive",
+        }
+    }
+
+    fn deposit(&mut self,amount:i64){
+        match self.status{
+            AccountStatus::Frozen=>{
+                println!("Account Frozen cannot deposit")
+            }
+            _=>self.balance+=amount
+            
+        }
+    }
+
+    fn withdraw(&mut self,amount:i64){
+        match self.status {
+            AccountStatus::Active=>if self.balance>amount{
+                self.balance-=amount
+            }
+            else{
+                println!("Insufficient Funds")
+            }
+            _=>println!("Cannot withdraw"),
+            
+        }
+    }
 }
 
 fn main(){
@@ -39,4 +74,11 @@ fn main(){
     println!("Account status: {}",acc1.is_active());
     acc1.freeze();
     println!("Account status: {}",acc1.is_active());
+    println!("{}",acc1.status_message());
+    acc1.unfreeze();
+    acc1.print_details();
+    acc1.deposit(25000);
+    acc1.print_details();
+    acc1.withdraw(26000);
+
 }
