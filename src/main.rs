@@ -1,93 +1,155 @@
-struct BankAccount{
+struct PlayerAccount{
     id:u32,
     balance:i64,
 }
 
-struct SavingsAccount{
+struct TreasuryAccount{
     id:u32,
     balance:i64,
 }
 
-struct LoanAccount{
+struct LotteryPool{
     id:u32,
     balance:i64,
-    owner:String,
 }
 
 trait Describable {
-    fn describe(&self);
+    fn describe (&self);
     
 }
 
-trait Transferable {
+trait Transferable{
+    fn deposit(&mut self,amount:i64);
+    fn withdraw(&mut self,amount:i64)->Result<i64,String>;
+}
 
-    fn transfer(&mut self,amount:i64)->Result<i64,String>;
+trait HasBalance {
+    fn get_balance(&self)->i64;
+    fn is_funded(&self)->bool;
     
 }
 
-impl Describable for BankAccount {
+impl Describable for PlayerAccount{
+    fn describe(&self){
+        println!("Player id: {}, Player balance: {}",self.id,self.balance)
+    }
+}
 
-    fn describe(&self) {
-        println!("Balance in Bank Account is : {}",self.balance);
+impl Transferable for PlayerAccount{
+    fn deposit(&mut self,amount:i64) {
+        self.balance+=amount
+    }
+    fn withdraw(&mut self,amount:i64)->Result<i64,String> {
+        if self.balance>=
+        amount{
+            self.balance-=amount;
+
+            return Ok(self.balance);
+        }
+        Err("Insufficient Balance".to_string())
+
+    }
+}
+
+impl HasBalance for PlayerAccount {
+
+    fn get_balance(&self)->i64 {
+        self.balance
+    }
+    fn is_funded(&self)->bool {
+        self.balance>0
     }
     
 }
 
-impl Transferable for BankAccount{
-    fn transfer(&mut self,amount:i64)->Result<i64,String> {
-        if self.balance>=amount{
+impl Describable for TreasuryAccount{
+    fn describe(&self){
+        println!("Treasury id: {}, Treasury balance: {}",self.id,self.balance)
+    }
+}
+
+impl Transferable for TreasuryAccount{
+    fn deposit(&mut self,amount:i64) {
+        self.balance+=amount
+
+    }
+
+    fn withdraw(&mut self,amount:i64)->Result<i64,String> {
+        if self.balance>amount{
             self.balance-=amount;
             return Ok(self.balance);
         }
-        Err("Not enough Balance".to_string())
+        Err("Insufficient Balance".to_string()
+    )
     }
 }
 
-impl Describable for SavingsAccount {
-
-    fn describe(&self) {
-        println!("Balance in Savings Account is: {}",self.balance);
+impl HasBalance for TreasuryAccount{
+    fn get_balance(&self)->i64 {
+        self.balance
     }
-    
+    fn is_funded(&self)->bool {
+        self.balance>0
+    }
 }
 
-impl Transferable for SavingsAccount {
-
-    fn transfer(&mut self,amount:i64)->Result<i64,String> {
-        if self.balance>=amount{
-            self.balance-=amount;
-            return Ok(self.balance);
-        }
-        Err("Not enough balance".to_string())
+impl Describable for LotteryPool {
+    fn describe(&self){
+        println!("Lottery id: {}, Lottery balance: {}",self.id,self.balance)
     }
     
 }
 
-impl Describable for LoanAccount{
-    fn describe(&self) {
-        println!("Balance in loan Account is: {}",self.balance);
+impl HasBalance for LotteryPool{
+    fn get_balance(&self)->i64 {
+        self.balance
+    }
+    fn is_funded(&self)->bool {
+        self.balance>0
+
     }
 }
 
-
-
+fn print_balance(acc:&impl HasBalance){
+    println!("Balance is: {}",acc.get_balance());
+    println!("Is funded: {}",acc.is_funded());
+}
 
 fn main(){
-    let mut bank_account = BankAccount{id:1,balance:2000};
-    let mut savings_account =  SavingsAccount{id:1,balance:999};
-    let mut loan_account = LoanAccount{id:1,balance:787,owner:"Bhagav".to_string()};
-    bank_account.describe();
-    savings_account.describe();
-    loan_account.describe();
-    match bank_account.transfer(9999){
-        Ok(value)=>println!("Amount deducted from BankAccount, updated balance is: {}",value),
-        Err(msg)=>println!("{}",msg),
-    }
-    match savings_account.transfer(9999){
-        Ok(value)=>println!("Amount deducted from SavingsAccount, updated balance is: {}",value),
-        Err(msg)=>println!("{}",msg),
-    }
+    let mut playeraccount = PlayerAccount{id:1,balance:999};
+    let mut treasuryaccount = TreasuryAccount{id:1,balance:25000};
+    let mut lotterypool = LotteryPool{id:1,balance:300};
+
+    playeraccount.deposit(999);
     
+    match playeraccount.withdraw(1998){
+        Ok(value)=>println!("Withdraw successful, avaliable balance: {}",value),
+        Err(msg)=>println!("{}",msg),
+
+    }
+
+    treasuryaccount.deposit(999);
+
+    match treasuryaccount.withdraw(999){
+        Ok(value)=>println!("Withdrawl successful, available balance: {}",value),
+        Err(msg)=>println!("{}",msg),
+    }
+
+    
+    playeraccount.describe();
+    treasuryaccount.describe();
+    lotterypool.describe();
+
+    println!("Balance: {} and is funded: {}",playeraccount.get_balance(),playeraccount.is_funded());
+    println!("Lottery pool is funded: {}",lotterypool.is_funded());
+    println!("Treasury Balance: {}",treasuryaccount.balance);
+
+    print_balance(&treasuryaccount);
+
+
+
+
+   
     
 
 }
