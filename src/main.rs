@@ -1,115 +1,89 @@
 
-struct PlayerAccount{
-    id:u32,
-    balance:i64,
+
+#[derive(PartialEq)]
+enum LotteryState{
+    Open,
+    Drawing,
+    Closed,
 }
 
-impl Describable for PlayerAccount{
-    fn describe (&self) {
-        println!("id: {}, balance: {}",self.id,self.balance);
-    }
+struct Lottery{
+    state:LotteryState,
 }
 
-impl Transferable for PlayerAccount{
-    fn deposit(&mut self,amount:i64) {
-        self.balance += amount
-    }
-    fn withdraw(&mut self,amount:i64)->Result<i64,String> {
-        if self.balance>=amount{
-            self.balance-=amount;
-            return Ok(self.balance);
+impl Lottery{
+    fn check_state(&self)->&str{
+        match self.state{
+            LotteryState::Open=>"State Open",
+            LotteryState::Drawing=>"Drawing Progress",
+            LotteryState::Closed=>"Lottery Closed",
         }
-        Err("Insufficient Funds".to_string())
     }
-    
-}
 
-struct TreasuryAccount{
-    id:u32,
-    balance:i64,
-}
-
-impl Describable for TreasuryAccount{
-    fn describe (&self) {
-        println!("id: {}, balance: {}",self.id,self.balance);
-    }
-}
-
-impl Transferable for TreasuryAccount{
-    fn deposit(&mut self,amount:i64) {
-        self.balance += amount
-    }
-    fn withdraw(&mut self,amount:i64)->Result<i64,String> {
-        if self.balance>=amount{
-            self.balance-=amount;
-            return Ok(self.balance)
+    fn start_drawing(&mut self)->Result<(),String>{
+        if self.state==LotteryState::Open{
+            self.state = LotteryState::Drawing;
+            return Ok(());
         }
-        Err("Insufficient Funds".to_string())
+        if self.state == LotteryState::Closed{
+            return Err("Lottery already closed, please try later".to_string());
+        }
+        return Err("Lottery already Drawing".to_string());
+    }
+
+    fn close(&mut self)->Result<(),String>{
+        if self.state == LotteryState::Drawing{
+            self.state = LotteryState::Closed;
+            return Ok(());
+        }
+        if self.state == LotteryState::Open{
+            return Err("Cannot close state when Open".to_string())
+        }
+        return Err("State already Closed".to_string());
+
+    }
+    fn open(&mut self)->Result<(),String>{
+        if self.state==LotteryState::Closed{
+            self.state = LotteryState::Open;
+            return Ok(());
+        }
+        if self.state == LotteryState::Open{
+            return Err("Lottery already Open".to_string());
+        }
+        Err("Cannot Open Lottery when in Match".to_string())
     }
 }
-
-struct LotteryAccount{
-    id:u32,
-    balance:i64,
-}
-
-impl Describable for LotteryAccount {
-    fn describe (&self) {
-        println!("id: {}, balance: {}",self.id,self.balance);
-    }
-    
-}
-
-trait Describable {
-    fn describe (&self);
-}
-
-trait Transferable{
-    fn deposit(&mut self,amount:i64);
-    fn withdraw(&mut self,amount:i64)->Result<i64,String>;
-}
-
-
-
-fn print_info(acc:&impl Describable){
-    acc.describe();
-}
-
-fn fund_account(acc: &mut impl Transferable,amount:i64){
-    acc.deposit(amount);
-    println!("Account funded with amount: {}",amount);
-
-}
-
-fn check_withdraw(acc:&mut impl Transferable,amount:i64){
-    match acc.withdraw(amount){
-        Ok(value)=>println!("Amount withdrawn, current balance: {}",value),
-        Err(msg)=>println!("{}",msg),
-    }
-   
-}
-
-
-
-
 
 fn main(){
-    let mut playeraccount = PlayerAccount{id:1,balance:100};
-    let mut treasuryaccount = TreasuryAccount{id:1,balance:25000};
-    let mut lotteryaccount = LotteryAccount{id:1,balance:500};
-   
-   playeraccount.describe();
-   treasuryaccount.describe();
-   lotteryaccount.describe();
-   print_info(&playeraccount);
-   print_info(&treasuryaccount);
-   print_info(&lotteryaccount);
-   fund_account(&mut playeraccount, 500);
-   print_info(&playeraccount);
-   fund_account(&mut treasuryaccount, 500);
-   print_info(&treasuryaccount);
-   check_withdraw(&mut playeraccount, 500);
-   check_withdraw(&mut treasuryaccount, 50000);
+    let mut lottery = Lottery{state:LotteryState::Open};
+    let result = lottery.check_state();
+    println!("{}",result);
 
+    match lottery.start_drawing(){
+        Ok(())=>println!("Drawing successful"),
+        Err(value)=>println!("{}",value),
+    }
+    let result = lottery.check_state();
+    println!("{}",result);
+
+    match lottery.close(){
+        Ok(())=>println!("State Closed"),
+        Err(msg)=>println!("{}",msg),
+    }
+
+    match lottery.close(){
+        Ok(())=>println!("State Closed"),
+        Err(msg)=>println!("{}",msg),
+    }
+
+    match lottery.start_drawing(){
+        Ok(())=>println!("Drawing successful"),
+        Err(value)=>println!("{}",value),
+    }
+
+    match lottery.open(){
+        Ok(())=>println!("Open successful"),
+        Err(value)=>println!("{}",value),
+    }
 
 }
