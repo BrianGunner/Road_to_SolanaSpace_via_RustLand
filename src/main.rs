@@ -1,89 +1,80 @@
-
-
-#[derive(PartialEq)]
-enum LotteryState{
-    Open,
-    Drawing,
-    Closed,
+#[derive(Debug)]
+struct Player{
+    id:u32,
+    name:String,
+    balance:u64,
 }
 
-struct Lottery{
+impl Player{
+    fn add_new_player(id:u32,name:String)->Player{
+        Player { id:id, name:name, balance: 0 }
+    }
+
+    fn add_balance(&mut self,amount:u64){
+        self.balance += amount
+    }
+}
+
+enum LotteryState {
+    Open,
+    Drawing,
+    Close,
+}
+
+struct Lottery {
     state:LotteryState,
+    pool:u64,
+    players:Vec<Player>
+    
 }
 
 impl Lottery{
-    fn check_state(&self)->&str{
-        match self.state{
-            LotteryState::Open=>"State Open",
-            LotteryState::Drawing=>"Drawing Progress",
-            LotteryState::Closed=>"Lottery Closed",
-        }
+    fn open_new_lottery()->Lottery{
+        Lottery {state:LotteryState::Open, pool:0,players:Vec::new()}
     }
 
-    fn start_drawing(&mut self)->Result<(),String>{
-        if self.state==LotteryState::Open{
-            self.state = LotteryState::Drawing;
-            return Ok(());
+    fn add_player(&mut self, mut players:Player)->Result<(),String>{
+        if players.balance<50{
+            return Err("Not enough balance".to_string());
         }
-        if self.state == LotteryState::Closed{
-            return Err("Lottery already closed, please try later".to_string());
-        }
-        return Err("Lottery already Drawing".to_string());
+        players.balance-=50;
+        self.pool+=50;
+        self.players.push(players);
+        return Ok(());
     }
 
-    fn close(&mut self)->Result<(),String>{
-        if self.state == LotteryState::Drawing{
-            self.state = LotteryState::Closed;
-            return Ok(());
+    fn lottery_state(&self){
+        println!("Total number of players joined: {}",self.players.len());
+        for player in self.players.iter(){
+            println!("Player: {}",player.balance);
         }
-        if self.state == LotteryState::Open{
-            return Err("Cannot close state when Open".to_string())
-        }
-        return Err("State already Closed".to_string());
-
-    }
-    fn open(&mut self)->Result<(),String>{
-        if self.state==LotteryState::Closed{
-            self.state = LotteryState::Open;
-            return Ok(());
-        }
-        if self.state == LotteryState::Open{
-            return Err("Lottery already Open".to_string());
-        }
-        Err("Cannot Open Lottery when in Match".to_string())
+        println!("Total lottery pool: {}",self.pool);
     }
 }
 
+
+
 fn main(){
-    let mut lottery = Lottery{state:LotteryState::Open};
-    let result = lottery.check_state();
-    println!("{}",result);
 
-    match lottery.start_drawing(){
-        Ok(())=>println!("Drawing successful"),
-        Err(value)=>println!("{}",value),
-    }
-    let result = lottery.check_state();
-    println!("{}",result);
-
-    match lottery.close(){
-        Ok(())=>println!("State Closed"),
+    let mut player_1 = Player::add_new_player(1,"Bhargav".to_string());
+    let mut player_2 = Player::add_new_player(1, "Potti".to_string());
+    player_1.add_balance(100);
+    player_2.add_balance(100);
+    let mut lottery_1 = Lottery::open_new_lottery();
+    match lottery_1.add_player(player_1){
+        Ok(())=>println!("Player added"),
         Err(msg)=>println!("{}",msg),
     }
-
-    match lottery.close(){
-        Ok(())=>println!("State Closed"),
+    match lottery_1.add_player(player_2){
+        Ok(())=>print!("Player added"),
         Err(msg)=>println!("{}",msg),
     }
+    lottery_1.lottery_state();
 
-    match lottery.start_drawing(){
-        Ok(())=>println!("Drawing successful"),
-        Err(value)=>println!("{}",value),
-    }
+    
+  
+   
+    
 
-    match lottery.open(){
-        Ok(())=>println!("Open successful"),
-        Err(value)=>println!("{}",value),
-    }
-
+    
 }
