@@ -1,32 +1,58 @@
 
 
-fn divide(a:i32,b:i32)->Result<i32,String>{
-    if b==0{
-        Err("Cannot divide by zero".to_string())
+fn add_two_numbers(a:i32,b:i32)->Result<i32,String>{
+    if a > 0 && b > 0{
+        Ok(a+b)
     }
     else{
-        Ok(a/b)
-    }
-}
-
-fn double_divide(a:i32,b:i32){
-
-    let result = divide(a, b);
-    match result{
-        Ok(value)=>println!("{}",value*2),
-        Err(msg)=>println!("{}",msg),
+        Err("Cannot add negative number".to_string())
     }
 
 }
-    
+
+fn add_and_double(a:i32,b:i32)->Result<i32,String>{
+    match add_two_numbers(a, b){
+        Ok(value)=>Ok(value*2),
+        Err(msg)=>return Err(msg),
+    }
+}
+
+fn add_and_double_and_add(a:i32,b:i32)->i32{
+    //take a+b, then take double and then add both again
+    let mut add = 0;
+    let mut double = 0;
+    match add_two_numbers(a, b){
+        Ok(value)=>add=value,
+        Err(msg)=>(),
+    }
+    match add_and_double(a, b){
+        Ok(value)=>double=value,
+        Err(msg)=>()
+    }
+    return add+double;
+
+}
+
+
 
 fn main(){
-    let result = divide(60, 20);
+
+    let a=-10;
+    let b = 20;
+
+    let result = add_two_numbers(a,b);
     match result{
-        Ok(value)=>println!("result : {}",value),
+        Ok(value)=>println!("The result is : {}",value),
+        Err(msg)=>println!("{}",msg)
+    }
+
+    let result_2 = add_and_double(a, b);
+    match result_2 {
+        Ok(value)=>println!("Doubled value: {}",value),
         Err(msg)=>println!("{}",msg),
     }
 
-    double_divide(60,20);
+    let add_plus_double = add_and_double_and_add(a, b);
+    println!("Add and double and add is : {}",add_plus_double);
 
 }
