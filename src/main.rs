@@ -1,33 +1,34 @@
+
+#[derive(Debug)]
 struct Account{
     id:u32,
     balance:i32,
 }
 
-impl Account {
-    fn new(accounts:&mut Vec<Account>,id:u32){
-        accounts.push(Account { id: id, balance: 0 });
-    }   
-    fn add_balance(accounts:&mut Vec<Account>,id:u32,amount:i32){
-        for acc in accounts.iter_mut(){
-            if acc.id==id{
-                acc.balance+=amount
-            }
+fn find_index(accounts:&Vec<Account>,id:u32)->Option<usize>{
+    for (index,acc) in accounts.iter().enumerate(){
+        if acc.id == id{
+            return Some(index);
         }
-    } 
-    fn print_accounts_state(accounts:&Vec<Account>){
-        println!("======🤑 Account State 🤑======");
-        
-        for acc in accounts.iter(){
-            println!("id: {}, balance: {}",acc.id,acc.balance)
-        }
-
-        println!("======🤑 Account State 🤑======");
     }
+    None
 }
 
 fn main(){
-    let mut accounts: Vec<Account> = Vec::new();
-    Account::new(&mut accounts, 1);
-    Account::add_balance(&mut accounts, 1, 500);
-    Account::print_accounts_state(&accounts);
-}
+    let mut accounts = vec![
+        Account{id:1,balance:0},
+        Account{id:2,balance:200},
+        Account{id:3,balance:300},
+        Account{id:4,balance:400},
+        Account{id:5,balance:500},
+       ];
+
+    let found_index = find_index(&accounts, 9);
+
+    match found_index {
+        Some(value)=>println!("Index Found: {}",value),
+        None=>println!("Id not found"),
+    }
+        
+    }
+
