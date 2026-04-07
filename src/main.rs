@@ -1,4 +1,6 @@
 
+
+
 #[derive(Debug)]
 struct Account{
     id:u32,
@@ -14,6 +16,13 @@ fn find_index(accounts:&Vec<Account>,id:u32)->Option<usize>{
     None
 }
 
+fn find_index_result(accounts:&Vec<Account>,from_id:u32,to_id:u32)->Result<(usize,usize),String>{
+    let from_index = find_index(accounts, from_id).ok_or("From Id not found".to_string())?;
+    let to_index = find_index(accounts, to_id).ok_or("To id not found".to_string())?;
+    return Ok((from_index,to_index));
+   
+}
+
 fn main(){
     let mut accounts = vec![
         Account{id:1,balance:0},
@@ -22,13 +31,13 @@ fn main(){
         Account{id:4,balance:400},
         Account{id:5,balance:500},
        ];
-
-    let found_index = find_index(&accounts, 9);
-
-    match found_index {
-        Some(value)=>println!("Index Found: {}",value),
-        None=>println!("Id not found"),
+    
+    let result = find_index_result(&accounts, 2,3);
+    match result{
+        Ok(value)=>println!("Found index: {:?}",value),
+        Err(msg)=>println!("{}",msg),
     }
+
         
     }
 
