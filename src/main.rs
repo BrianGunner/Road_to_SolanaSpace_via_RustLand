@@ -4,29 +4,44 @@ struct Account{
     balance:i32,
 }
 
-fn index_find(accounts:& Vec<Account>,id:u32)->Result<usize,String>{
+fn fetch_index(accounts:& Vec<Account>,id:u32)->Option<usize>{
     for (index,acc) in accounts.iter().enumerate(){
         if acc.id == id{
-            return Ok(Some(index).ok_or("Id not found,None,ok_or".to_string())?);
+            return Some(index);
         }
     }
-    Err("Id not found,Err".to_string())
+    None
 }
 
-fn main(){
-    let accounts = vec![
-        Account{id:1,balance:25000},
-        Account{id:2,balance:0},
-        Account{id:3,balance:3434},
-        ];
+fn modify(accounts:&mut Vec<Account>,id:u32)->Result<(),String>{
+    let index_found = fetch_index(accounts, id).ok_or("Could not find index")?;
+    accounts[index_found].balance += 11;
+    return Ok(());
+}
 
-    let found = index_find(&accounts, 8);
+impl Account {
 
-    match found {
-        Ok(value)=>println!("{}",value),
-        Err(msg)=>println!("{}",msg),
-        
+    fn print_state(accounts:& Vec<Account>){
+        for acc in accounts.iter(){
+            println!("{}",acc.balance)
+        }
     }
+    
+}
 
-     
+
+
+fn main(){
+    let mut accounts = vec![
+        Account{id:1,balance:9999},
+        Account{id:2,balance:0},
+        Account{id:3,balance:8888},
+    ];
+
+    let modify_account = modify(&mut accounts, 9);
+    match modify_account{
+        Ok(())=>println!("Success"),
+        Err(msg)=>println!("{}",msg),
+    }
+    Account::print_state(&accounts);
 }
