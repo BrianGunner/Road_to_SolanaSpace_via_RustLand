@@ -1,82 +1,53 @@
-
+const SYSTEM_PROGRAM: u32 = 1;   // Placeholder ID
+const OTHER_PROGRAM: u32 = 2;    // Placeholder ID
 struct Account{
-    id:u32,
-    balance:i32,
-}
-#[derive(Debug)]
-struct TransferPlan{
-    from_index:usize,
-    to_index:usize,
-    amount:i32,
+    address:u32,
+    lamports:i32,
+    owner:u32,
 }
 
-fn print_state(accounts:&Vec<Account>){
-    println!("🤑++++++++++++++🤑");
+fn print_state(accounts:&[Account]){
+    println!("🤑++++++++++++++++++++++🤑");
     for acc in accounts.iter(){
-        println!("Id: {} --- Balance: {}",acc.id,acc.balance)
+        println!("Address: {},lamports: {}, owner: {}",acc.address,acc.lamports,acc.owner)
     }
-    println!("🤑++++++++++++++🤑");
-    
+    println!("🤑++++++++++++++++++++++🤑");
 }
 
-fn find_index(accounts:&[Account],id:u32)->Option<usize>{
+fn find_index(accounts:&[Account],address:u32)->Option<usize>{
     for (index,acc) in accounts.iter().enumerate(){
-        if acc.id == id{
+        if acc.address==address{
             return Some(index);
         }
     }
     None
 }
 
-fn build_transfer_plan(accounts:&Vec<Account>,from_id:u32,to_id:u32,amount:i32)->Result<TransferPlan,String>{
-    let from_index = find_index(accounts, from_id).ok_or("Could not find from id".to_string())?;
-    let to_index = find_index(accounts, to_id).ok_or("Could not find to id".to_string())?;
-    if from_index == to_index{
-        return Err("from id cannot be to id".to_string());
+fn adjust_lamports(accounts:&mut Vec<Account>,address:u32,amount:i32)->Result<(),String>{
+    let index_adjust = find_index(accounts, address).ok_or("Id does not exist".to_string())?;
+    if accounts[index_adjust].owner==SYSTEM_PROGRAM{
+        accounts[index_adjust].lamports+=amount;
+        return Ok(());
     }
-    if accounts[from_index].balance<amount{
-        return Err("Insufficient balance".to_string());
-    }
-    Ok(TransferPlan { from_index,to_index,amount})
+    Err("Other Program cannot adjust lamports".to_string())
 }
 
-fn execute_transfer(accounts:&mut Vec<Account>,plan:TransferPlan){
-    if plan.from_index<plan.to_index{
-        let (left,right )= accounts.split_at_mut(plan.to_index);
-        {
-            left[plan.from_index].balance-=plan.amount;
-            right[0].balance+=plan.amount;
-        }
-    }
-    else if plan.from_index>plan.to_index{
-        let (left,right) = accounts.split_at_mut(plan.from_index);
-        {
-            right[0].balance-=plan.amount;
-            left[plan.to_index].balance+=plan.amount;
 
-    }
-}
-}
 
-fn main()->Result<(),String>{
+fn main(){
     let mut accounts = vec![
-        Account{id:1,balance:9999},
-        Account{id:2,balance:0},
-        Account{id:3,balance:78},
-        Account{id:4,balance:0},
-        Account{id:5,balance:25000},
-        Account{id:6,balance:8888},
+        Account{address:1,lamports:999,owner:1},
+        Account{address:2,lamports:0,owner:1},
+        Account{address:3,lamports:23225,owner:2},
+        Account{address:4,lamports:34232,owner:1},
+        Account{address:5,lamports:0,owner:1},
+
     ];
-
     print_state(&accounts);
-    let tx_1 = build_transfer_plan(&accounts, 2, 2, 99)?;
-    execute_transfer(&mut accounts, tx_1);
+    let test_case = adjust_lamports(&mut accounts, 2, 99);
+    match test_case{
+        Ok(())=>println!("Adjustment done"),
+        Err(msg)=>println!("{}",msg),
+    }
     print_state(&accounts);
-    return Ok(());
-
-    
-
-   
-   
-
 }
