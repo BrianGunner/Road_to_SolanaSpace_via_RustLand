@@ -1,33 +1,39 @@
 
-#[derive(Debug)]
 #[derive(PartialEq)]
-enum ProgramType {
-    System,
-    Token,
-    Other,
+#[derive(Debug)]
+enum ProgramType{
+    System,Token,Other
 }
+#[derive(PartialEq)]
 
-struct Instruction{
-    program:ProgramType,
-    from_address:u32,
-    to_address:u32,
-    amount:i32,
-}
 struct Account{
     address:u32,
     lamports:i32,
-    owner:ProgramType,
+    owner:ProgramType
 }
 
+struct Instruction{
+    from_ad:u32,
+    to_ad:u32,
+    amount:i32,
+    program:ProgramType,
+}
 
-
-impl Account {
-    fn print_state(accounts:&[Account]){
-        println!("🤑+++++++++++🤑");
+impl Account{
+    fn create_new(accounts:&mut Vec<Account>,address:u32,program:ProgramType)->Result<(),String>{
         for acc in accounts.iter(){
-            println!("Address: {}, Lamports: {}, Owner: {:?}",acc.address,acc.lamports,acc.owner)
+            if acc.address==address{
+                return Err("Account id already exits".to_string());
+            }
         }
-        println!("🤑+++++++++++🤑");
+        accounts.push(Account { address: address, lamports:100, owner:program });
+        Ok(())
+    }
+
+    fn print_state(accounts:&[Account]){
+        for acc in accounts.iter(){
+            println!("Address:{},Lamports:{},Owner:{:?}",acc.address,acc.lamports,acc.owner)
+        }
     }
 
     fn find_index(accounts:&[Account],address:u32)->Option<usize>{
@@ -38,65 +44,45 @@ impl Account {
         }
         None
     }
-
-    fn create_account(accounts:&mut Vec<Account>,address:u32)->Result<(),String>{
-        for acc in accounts.iter(){
-            if acc.address == address{
-                return Err("Address already exists".to_string());
-            }
-        }
-        accounts.push(Account { address:address, lamports: 100, owner: ProgramType::System});
-        Ok(())
     
-    }
-
-    fn process_instruction(instruction:Instruction,accounts:&mut[Account])->Result<(),String>{
-        let from_ad_index = Account::find_index(&accounts, instruction.from_address).ok_or("No from id".to_string())?;
-        let to_ad_index = Account::find_index(&accounts, instruction.to_address).ok_or("No to id".to_string())?;
-        if from_ad_index==to_ad_index{
-            return Err("From and to addresses cannot be the same".to_string());
-        }
-        if instruction.amount<=0{
-            return Err("Amount cannot be negative".to_string());
-        }
-        if instruction.amount>accounts[from_ad_index].lamports{
-            return Err("Insufficient Balance in Lamports".to_string());
-        }
+    fn process_instruction(accounts:&[Account],instruction:Instruction)->Result<(),String>{
+        let from_index = Account::find_index(&accounts, instruction.from_ad).ok_or("Could not find from index".to_string())?;
+        let to_index = Account::find_index(accounts, instruction.to_ad).ok_or("Could not find to index")?;
         if instruction.program==ProgramType::System{
-            println!("Program Type: {:?}",instruction.program);
-            println!("From: {} and To: {}",instruction.from_address,instruction.to_address);
-            println!("Transfer Amount: {}",instruction.amount);
-            accounts[from_ad_index].lamports-=instruction.amount;
-            accounts[to_ad_index].lamports+=instruction.amount;
-            return Ok(());
-            
-           
+        if instruction.amount<=0{
+            return Err("Tx amount cannot be less than or equal to 0".to_string());
         }
-        else {
-            return Err("Only Program Type System eligible for transfer".to_string());
+        if instruction.amount<accounts[from_index].lamports{
+            return Err("Insufficient Balance".to_string());
         }
-    
+        if accounts[from_index]==accounts[to_index]{
+            return Err("From and to id cannot be the same".to_string());
+        }
+        println!("Instruction is ready to be processed");
+        Ok(())
+    }
+    else{
+        return Err("Instruction must be of type System to be processed".to_string());
+    }
         
     }
-
-
 }
 
-fn main()->Result<(),String>{
-    let mut accounts = Vec::new();
-    Account::create_account(&mut accounts, 1)?;
-    Account::create_account(&mut accounts, 2)?;  
-    Account::create_account(&mut accounts, 3)?;
-    Account::create_account(&mut accounts, 4)?;
-    Account::print_state(&accounts);
-    let first_instruction = Instruction{program:ProgramType::System,from_address:2,to_address:1,amount:-1};
-    let second_instruciton = Instruction{program:ProgramType::Other,from_address:2,to_address:1,amount:129};
-    let first_test = Account::process_instruction(first_instruction, &mut accounts);
-    match first_test {
+fn main(){
+
+    let mut accounts: Vec<Account> = Vec::new();
+    let account1 = Account::create_new(&mut accounts, 1, ProgramType::System);
+    let account2 = Account::create_new(&mut accounts, 2, ProgramType::Other);
+    match account2{
+        Ok(value)=>println!("Account created"),
+        Err(msg)=>println!("{}",msg),
+    }
+    let instruction_1=Instruction{from_ad:1,to_ad:2,amount:100,program:ProgramType::Token};
+    let process_1 = Account::process_instruction(&accounts, instruction_1);
+    match process_1 {
         Ok(value)=>println!("{:?}",value),
         Err(msg)=>println!("{}",msg),
     }
-    Account::print_state(&accounts);
-   
-    Ok(())
+
+
 }
