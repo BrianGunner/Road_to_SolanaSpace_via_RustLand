@@ -121,6 +121,8 @@ Supabase (tickets, history)
 - [x] Anchor program (round, player, jackpot accounts)
 - [x] Telegram bot with /play, /start, /status
 - [x] Devnet deployment
+- [ ] Mainnet deployment
+- [ ] More games More Communities 
 
 ### V2 — Drift Integration
 The jackpot pool will be deposited into **Drift Protocol's lending market** between draws. The pool earns yield passively — making the jackpot self-growing even when no rounds are running.
