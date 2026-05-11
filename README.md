@@ -164,7 +164,7 @@ cargo run
 
 ## Team
 
-Built by **BrianGunner** for the Colosseum Hackathon.
+Built by **BrianGunner** and team for the Colosseum Hackathon.
 
 ---
 
