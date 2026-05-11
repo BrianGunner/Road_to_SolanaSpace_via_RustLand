@@ -18,7 +18,12 @@ struct Instruction{
     amount:i32,
     program:ProgramType,
 }
-
+#[derive(Debug)]
+struct Plan{
+    from_ind:usize,
+    to_ind:usize,
+    amt:i32,
+}
 impl Account{
     fn create_new(accounts:&mut Vec<Account>,address:u32,program:ProgramType)->Result<(),String>{
         for acc in accounts.iter(){
@@ -31,6 +36,7 @@ impl Account{
     }
 
     fn print_state(accounts:&[Account]){
+        println!("🤑**************🤑");
         for acc in accounts.iter(){
             println!("Address:{},Lamports:{},Owner:{:?}",acc.address,acc.lamports,acc.owner)
         }
@@ -45,44 +51,61 @@ impl Account{
         None
     }
     
-    fn process_instruction(accounts:&[Account],instruction:Instruction)->Result<(),String>{
-        let from_index = Account::find_index(&accounts, instruction.from_ad).ok_or("Could not find from index".to_string())?;
-        let to_index = Account::find_index(accounts, instruction.to_ad).ok_or("Could not find to index")?;
-        if instruction.program==ProgramType::System{
-        if instruction.amount<=0{
-            return Err("Tx amount cannot be less than or equal to 0".to_string());
+    fn validate_system_instruction(accounts:&[Account],instruction:&Instruction)->Result<Plan,String>{
+        
+        if instruction.program!=ProgramType::System{
+            return Err("Only System Program allowed".to_string())
+            
         }
-        if instruction.amount<accounts[from_index].lamports{
+            
+        let from_index=Account::find_index(&accounts,instruction.from_ad).ok_or("No from id".to_string())?;
+        let to_index = Account::find_index(&accounts, instruction.to_ad).ok_or("No to id".to_string())?;
+        if from_index==to_index{
+            return Err("From and to ids cannot be the same".to_string());
+        }
+        if instruction.amount<=0{
+            return Err("Tx amount cannot be less than or 0".to_string());
+        }
+        if accounts[from_index].lamports<instruction.amount{
             return Err("Insufficient Balance".to_string());
         }
-        if accounts[from_index]==accounts[to_index]{
-            return Err("From and to id cannot be the same".to_string());
+        if accounts[from_index].owner!=ProgramType::System{
+            return Err("From account owner not System".to_string());
         }
-        println!("Instruction is ready to be processed");
-        Ok(())
-    }
-    else{
-        return Err("Instruction must be of type System to be processed".to_string());
-    }
+        if accounts[to_index].owner!=ProgramType::System{
+            return Err("To account owner not System".to_string());
+        }
+        return Ok(Plan{from_ind:from_index,to_ind:to_index,amt:instruction.amount});
+
         
+
     }
+
+    fn execute_plan(accounts:&mut[Account],plan:Plan){
+        accounts[plan.from_ind].lamports-=plan.amt;
+        accounts[plan.to_ind].lamports+=plan.amt;
+    }
+    
 }
 
-fn main(){
+fn main()->Result<(),String>{
 
     let mut accounts: Vec<Account> = Vec::new();
     let account1 = Account::create_new(&mut accounts, 1, ProgramType::System);
-    let account2 = Account::create_new(&mut accounts, 2, ProgramType::Other);
-    match account2{
-        Ok(value)=>println!("Account created"),
-        Err(msg)=>println!("{}",msg),
-    }
-    let instruction_1=Instruction{from_ad:1,to_ad:2,amount:100,program:ProgramType::Token};
-    let process_1 = Account::process_instruction(&accounts, instruction_1);
-    match process_1 {
+    let account2 = Account::create_new(&mut accounts, 2, ProgramType::System);
+    let account3 = Account::create_new(&mut accounts, 3, ProgramType::Token);
+    let account4 = Account::create_new(&mut accounts, 4, ProgramType::Other);
+    let instruction_1= Instruction{from_ad:2,to_ad:1,amount:100,program:ProgramType::System};
+    let process_instruction_1=Account::validate_system_instruction(&accounts, &instruction_1);
+    match process_instruction_1 {
         Ok(value)=>println!("{:?}",value),
         Err(msg)=>println!("{}",msg),
     }
-
+    Account::print_state(&accounts);
+    let plan_1 = Account::validate_system_instruction(&mut accounts, &instruction_1)?;
+    Account::execute_plan(&mut accounts, plan_1);
+    Account::print_state(&accounts);
+    Ok(())
+    
 
 }
