@@ -12,7 +12,7 @@
 
 WhiskySour is a Telegram-based community game that runs on Solana. Every 5 minutes, a round fires — players pay a small entry fee, 80% win, 20% lose. Losers don't lose everything — they lose only 25% of their entry and earn bonus jackpot tickets. The more you play, the better your jackpot odds.
 
-**Play More. Stay More. Keep Winning.**
+**Keep Winning.**
 
 ---
 
@@ -118,9 +118,11 @@ Supabase (tickets, history)
 
 ### V1 — Hackathon Build (Current)
 - [x] Website
-- [ ] Anchor program (round, player, jackpot accounts)
-- [ ] Telegram bot with /play, /start, /status
-- [ ] Devnet deployment
+- [x] Anchor program (round, player, jackpot accounts)
+- [x] Telegram bot with /play, /start, /status
+- [x] Devnet deployment
+- [ ] Mainnet deployment
+- [ ] More games More Communities 
 
 ### V2 — Drift Integration
 The jackpot pool will be deposited into **Drift Protocol's lending market** between draws. The pool earns yield passively — making the jackpot self-growing even when no rounds are running.
@@ -162,7 +164,7 @@ cargo run
 
 ## Team
 
-Built by **BrianGunner** for the Colosseum Hackathon.
+Built by **BrianGunner** and team for the Colosseum Hackathon.
 
 ---
 
