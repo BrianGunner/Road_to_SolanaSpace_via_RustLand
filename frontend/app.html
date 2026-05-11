@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>WhiskySour — Keep Winning</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold:   #F5C842;
+      --amber:  #D4A017;
+      --dark:   #111111;
+      --gray:   #1A1A1A;
+      --card:   #222222;
+      --muted:  #777777;
+      --white:  #F5F5F5;
+      --green:  #4CAF50;
+      --red:    #F44336;
+    }
+
+    body {
+      background: var(--dark);
+      color: var(--white);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+
+    /* HEADER */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.2rem 1.2rem 0.8rem;
+      border-bottom: 1px solid #2a2a2a;
+    }
+    .logo { font-size: 1.2rem; font-weight: 900; color: var(--gold); }
+    .logo span { color: var(--white); }
+    .wallet-badge {
+      background: var(--card);
+      border: 1px solid #333;
+      border-radius: 20px;
+      padding: 0.3rem 0.8rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    /* TABS */
+    .tabs {
+      display: flex;
+      background: var(--gray);
+      margin: 1rem 1.2rem;
+      border-radius: 12px;
+      padding: 4px;
+    }
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 0.6rem;
+      border-radius: 9px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--muted);
+      transition: all 0.2s;
+    }
+    .tab.active {
+      background: var(--gold);
+      color: var(--dark);
+    }
+
+    /* CONTENT */
+    .content { padding: 0 1.2rem; }
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* CARDS */
+    .card {
+      background: var(--card);
+      border: 1px solid #2a2a2a;
+      border-radius: 14px;
+      padding: 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .card-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+    }
+    .card-value {
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: var(--white);
+    }
+    .card-value.gold { color: var(--gold); }
+    .card-sub {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.2rem;
+    }
+
+    /* GRID */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.8rem;
+      margin-bottom: 0.8rem;
+    }
+    .grid-2 .card { margin-bottom: 0; }
+
+    /* JACKPOT CARD */
+    .jackpot-card {
+      background: linear-gradient(135deg, #1a1200, #2a1f00);
+      border: 1px solid var(--amber);
+      border-radius: 14px;
+      padding: 1.4rem;
+      margin-bottom: 0.8rem;
+      text-align: center;
+    }
+    .jackpot-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--amber);
+      margin-bottom: 0.5rem;
+    }
+    .jackpot-amount {
+      font-size: 2.4rem;
+      font-weight: 900;
+      color: var(--gold);
+    }
+    .jackpot-sub { font-size: 0.75rem; color: var(--muted); margin-top: 0.3rem; }
+
+    /* ROUND TIMER */
+    .round-card {
+      background: var(--card);
+      border: 1px solid #2a2a2a;
+      border-radius: 14px;
+      padding: 1.2rem;
+      margin-bottom: 0.8rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .round-info h3 { font-size: 1rem; font-weight: 700; }
+    .round-info p { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+    .timer {
+      font-size: 1.4rem;
+      font-weight: 900;
+      color: var(--gold);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* PLAY BUTTON */
+    .play-btn {
+      width: 100%;
+      background: var(--gold);
+      color: var(--dark);
+      border: none;
+      border-radius: 14px;
+      padding: 1rem;
+      font-size: 1.1rem;
+      font-weight: 900;
+      cursor: pointer;
+      margin-bottom: 0.8rem;
+      transition: background 0.2s;
+      font-family: 'Inter', sans-serif;
+    }
+    .play-btn:hover { background: var(--amber); }
+    .play-btn:disabled {
+      background: #333;
+      color: var(--muted);
+      cursor: not-allowed;
+    }
+
+    /* SECTION TITLE */
+    .section-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 1.2rem 0 0.6rem;
+    }
+
+    /* STATS ROW */
+    .stats-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.7rem 0;
+      border-bottom: 1px solid #2a2a2a;
+      font-size: 0.9rem;
+    }
+    .stats-row:last-child { border-bottom: none; }
+    .stats-row .label { color: var(--muted); }
+    .stats-row .value { font-weight: 700; }
+    .stats-row .value.green { color: var(--green); }
+    .stats-row .value.gold { color: var(--gold); }
+    .stats-row .value.red { color: var(--red); }
+
+    /* PROFIT BAR */
+    .profit-bar-wrap {
+      margin: 0.5rem 0 1rem;
+    }
+    .profit-bar-track {
+      height: 6px;
+      background: #333;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .profit-bar-fill {
+      height: 100%;
+      background: var(--gold);
+      border-radius: 10px;
+      transition: width 0.5s;
+    }
+    .profit-bar-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 0.3rem;
+    }
+
+    /* TICKET RING */
+    .ticket-ring-wrap {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.5rem 0;
+    }
+    .ring {
+      position: relative;
+      width: 70px;
+      height: 70px;
+      flex-shrink: 0;
+    }
+    .ring svg { transform: rotate(-90deg); }
+    .ring-center {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+    .ring-center .ring-num { font-size: 1.1rem; font-weight: 900; color: var(--gold); }
+    .ring-center .ring-label { font-size: 0.55rem; color: var(--muted); }
+    .ticket-info h4 { font-size: 1rem; font-weight: 700; }
+    .ticket-info p { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+
+    /* LEADERBOARD */
+    .leader-row {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      padding: 0.7rem 0;
+      border-bottom: 1px solid #2a2a2a;
+    }
+    .leader-row:last-child { border-bottom: none; }
+    .rank {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+      width: 20px;
+      text-align: center;
+    }
+    .rank.gold { color: var(--gold); }
+    .leader-name { flex: 1; font-size: 0.9rem; font-weight: 600; }
+    .leader-tickets {
+      font-size: 0.8rem;
+      color: var(--gold);
+      font-weight: 700;
+    }
+
+    /* BOTTOM NAV */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--gray);
+      border-top: 1px solid #2a2a2a;
+      display: flex;
+      padding: 0.6rem 0 0.8rem;
+    }
+    .nav-item {
+      flex: 1;
+      text-align: center;
+      cursor: pointer;
+      padding: 0.3rem;
+    }
+    .nav-icon { font-size: 1.3rem; }
+    .nav-label { font-size: 0.6rem; color: var(--muted); margin-top: 0.1rem; font-weight: 600; letter-spacing: 0.5px; }
+    .nav-item.active .nav-label { color: var(--gold); }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      top: 1rem; left: 50%;
+      transform: translateX(-50%);
+      background: var(--gold);
+      color: var(--dark);
+      font-weight: 700;
+      padding: 0.6rem 1.4rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 999;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo">🥃 Whisky<span>Sour</span></div>
+    <div class="wallet-badge" id="walletBadge">Not connected</div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('global')">Global</div>
+    <div class="tab" onclick="switchTab('my')">My Stats</div>
+    <div class="tab" onclick="switchTab('play')">Play</div>
+    <div class="tab" onclick="switchTab('leaderboard')">Board</div>
+  </div>
+
+  <div class="content">
+
+    <!-- GLOBAL VIEW -->
+    <div class="view active" id="view-global">
+
+      <div class="jackpot-card">
+        <div class="jackpot-label">🏆 Today's Jackpot Pool</div>
+        <div class="jackpot-amount" id="jackpotAmount">12.84 SOL</div>
+        <div class="jackpot-sub">Drawn every 288 rounds · Resets daily</div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-label">Shots Today</div>
+          <div class="card-value" id="shotsToday">142</div>
+          <div class="card-sub">rounds played</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Players</div>
+          <div class="card-value" id="totalPlayers">1,284</div>
+          <div class="card-sub">across all groups</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-label">Communities</div>
+          <div class="card-value gold" id="communities">38</div>
+          <div class="card-sub">active groups</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Tickets Sold</div>
+          <div class="card-value gold" id="ticketsSold">9,471</div>
+          <div class="card-sub">total this cycle</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Next Round</div>
+        <div class="round-card" style="background:transparent; border:none; padding:0; margin:0;">
+          <div class="round-info">
+            <h3>Round #143</h3>
+            <p>Min 3 players · 0.05 SOL entry</p>
+          </div>
+          <div class="timer" id="globalTimer">04:32</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- MY STATS VIEW -->
+    <div class="view" id="view-my">
+
+      <div class="card">
+        <div class="card-label">My Balance</div>
+        <div class="card-value gold" id="myBalance">2.341 SOL</div>
+        <div class="card-sub" id="myWallet">wallet: 6WYt...vwun</div>
+      </div>
+
+      <div class="section-title">Performance</div>
+      <div class="card">
+        <div class="stats-row">
+          <span class="label">Rounds Played</span>
+          <span class="value" id="roundsPlayed">47</span>
+        </div>
+        <div class="stats-row">
+          <span class="label">Rounds Won</span>
+          <span class="value green" id="roundsWon">39</span>
+        </div>
+        <div class="stats-row">
+          <span class="label">Win Rate</span>
+          <span class="value green" id="winRate">83%</span>
+        </div>
+        <div class="stats-row">
+          <span class="label">Total Wagered</span>
+          <span class="value" id="totalWagered">2.35 SOL</span>
+        </div>
+        <div class="stats-row">
+          <span class="label">Total Won</span>
+          <span class="value green" id="totalWon">2.51 SOL</span>
+        </div>
+        <div class="stats-row">
+          <span class="label">Profit</span>
+          <span class="value green" id="myProfit">+0.16 SOL</span>
+        </div>
+      </div>
+
+      <div class="section-title">Profit Rate</div>
+      <div class="card">
+        <div class="profit-bar-wrap">
+          <div class="profit-bar-track">
+            <div class="profit-bar-fill" id="profitBar" style="width: 68%"></div>
+          </div>
+          <div class="profit-bar-labels">
+            <span>0%</span>
+            <span id="profitPct" style="color: var(--gold); font-weight:700;">+6.8%</span>
+            <span>100%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">Jackpot Tickets</div>
+      <div class="card">
+        <div class="ticket-ring-wrap">
+          <div class="ring">
+            <svg width="70" height="70" viewBox="0 0 70 70">
+              <circle cx="35" cy="35" r="28" fill="none" stroke="#333" stroke-width="6"/>
+              <circle cx="35" cy="35" r="28" fill="none" stroke="#F5C842" stroke-width="6"
+                stroke-dasharray="175.9" stroke-dashoffset="56.3" stroke-linecap="round"/>
+            </svg>
+            <div class="ring-center">
+              <div class="ring-num" id="myTickets">32</div>
+              <div class="ring-label">tickets</div>
+            </div>
+          </div>
+          <div class="ticket-info">
+            <h4>32 / 50 tickets</h4>
+            <p id="jackpotOdds">Jackpot odds: ~3.4%</p>
+            <p style="margin-top:0.3rem; color: var(--gold); font-size:0.8rem;">+2 tickets next loss</p>
+          </div>
+        </div>
+        <div class="stats-row" style="margin-top:0.8rem;">
+          <span class="label">Tickets from wins</span>
+          <span class="value gold">39</span>
+        </div>
+        <div class="stats-row">
+          <span class="label">Tickets from losses</span>
+          <span class="value gold">16</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- PLAY VIEW -->
+    <div class="view" id="view-play">
+
+      <div class="round-card" style="margin-bottom:0.8rem;">
+        <div class="round-info">
+          <h3>Round #143</h3>
+          <p id="playersJoined">4 players joined</p>
+        </div>
+        <div class="timer" id="playTimer">04:32</div>
+      </div>
+
+      <div class="jackpot-card" style="margin-bottom:0.8rem;">
+        <div class="jackpot-label">Round Pool</div>
+        <div class="jackpot-amount" style="font-size:1.8rem;" id="roundPool">0.20 SOL</div>
+        <div class="jackpot-sub">4 players · 80% win · split loser pool equally</div>
+      </div>
+
+      <button class="play-btn" id="playBtn" onclick="joinRound()">
+        🥃 Pour a Shot — 0.05 SOL
+      </button>
+
+      <div class="card">
+        <div class="stats-row">
+          <span class="label">Entry Fee</span>
+          <span class="value">0.05 SOL</span>
+        </div>
+        <div class="stats-row">
+          <span class="label">Win Chance</span>
+          <span class="value green">80%</span>
+        </div>
+        <div class="stats-row">
+          <span class="label">If you win</span>
+          <span class="value green">+share of loser pool</span>
+        </div>
+        <div class="stats-row">
+          <span class="label">If you lose</span>
+          <span class="value red">-0.0125 SOL + 2 tickets</span>
+        </div>
+        <div class="stats-row">
+          <span class="label">Min players</span>
+          <span class="value">3 (refund if under)</span>
+        </div>
+      </div>
+
+      <div class="section-title">Last Round Results</div>
+      <div class="card">
+        <div class="stats-row">
+          <span class="label">Round #142</span>
+          <span class="value green">You WON 🎉</span>
+        </div>
+        <div class="stats-row">
+          <span class="label">Players</span>
+          <span class="value">8</span>
+        </div>
+        <div class="stats-row">
+          <span class="label">Winners</span>
+          <span class="value green">6</span>
+        </div>
+        <div class="stats-row">
+          <span class="label">Your share</span>
+          <span class="value green">+0.0042 SOL</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- LEADERBOARD VIEW -->
+    <div class="view" id="view-leaderboard">
+
+      <div class="section-title">Top Ticket Holders</div>
+      <div class="card" id="leaderboardList">
+        <!-- populated by JS -->
+      </div>
+
+      <div class="section-title">Top Winners (All Time)</div>
+      <div class="card" id="topWinnersList">
+        <!-- populated by JS -->
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="switchNav(this, 'global')">
+      <div class="nav-icon">🌐</div>
+      <div class="nav-label">GLOBAL</div>
+    </div>
+    <div class="nav-item" onclick="switchNav(this, 'my')">
+      <div class="nav-icon">👤</div>
+      <div class="nav-label">MY STATS</div>
+    </div>
+    <div class="nav-item" onclick="switchNav(this, 'play')">
+      <div class="nav-icon">🥃</div>
+      <div class="nav-label">PLAY</div>
+    </div>
+    <div class="nav-item" onclick="switchNav(this, 'leaderboard')">
+      <div class="nav-icon">🏆</div>
+      <div class="nav-label">BOARD</div>
+    </div>
+  </div>
+
+<script>
+  // Telegram WebApp init
+  const tg = window.Telegram?.WebApp;
+  if (tg) {
+    tg.ready();
+    tg.expand();
+    tg.setHeaderColor('#111111');
+    const user = tg.initDataUnsafe?.user;
+    if (user) {
+      document.getElementById('walletBadge').textContent = `@${user.username || user.first_name}`;
+    }
+  }
+
+  // Tab switching
+  function switchTab(name) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('view-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function switchNav(el, name) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('view-' + name).classList.add('active');
+    const tabs = document.querySelectorAll('.tab');
+    const map = { global: 0, my: 1, play: 2, leaderboard: 3 };
+    tabs[map[name]].classList.add('active');
+  }
+
+  // Countdown timer
+  let seconds = 272;
+  function updateTimer() {
+    seconds--;
+    if (seconds < 0) seconds = 300;
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    const t = `${m}:${s}`;
+    document.getElementById('globalTimer').textContent = t;
+    document.getElementById('playTimer').textContent = t;
+  }
+  setInterval(updateTimer, 1000);
+
+  // Join round
+  function joinRound() {
+    const btn = document.getElementById('playBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Joining round...';
+    showToast('Transaction sent!');
+    setTimeout(() => {
+      btn.textContent = '✅ Joined! Good luck 🥃';
+      showToast('You\'re in Round #143!');
+      const p = document.getElementById('playersJoined');
+      p.textContent = '5 players joined';
+    }, 1500);
+  }
+
+  // Toast
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // Leaderboard data
+  const ticketLeaders = [
+    { name: 'Bhargav', tickets: 50, tag: '👑' },
+    { name: 'Vishal', tickets: 47, tag: '' },
+    { name: 'Brian', tickets: 44, tag: '' },
+    { name: 'Madhumita', tickets: 41, tag: '' },
+    { name: 'Potti', tickets: 38, tag: '' },
+  ];
+
+  const winLeaders = [
+    { name: 'Bhargav', profit: '+2.41 SOL' },
+    { name: 'Brian', profit: '+1.87 SOL' },
+    { name: 'Vishal', profit: '+1.54 SOL' },
+    { name: 'Madhumita', profit: '+1.21 SOL' },
+    { name: 'Potti', profit: '+0.98 SOL' },
+  ];
+
+  const lb = document.getElementById('leaderboardList');
+  ticketLeaders.forEach((p, i) => {
+    lb.innerHTML += `
+      <div class="leader-row">
+        <div class="rank ${i === 0 ? 'gold' : ''}">${i === 0 ? '🥇' : i + 1}</div>
+        <div class="leader-name">${p.tag} ${p.name}</div>
+        <div class="leader-tickets">${p.tickets} tickets</div>
+      </div>`;
+  });
+
+  const wl = document.getElementById('topWinnersList');
+  winLeaders.forEach((p, i) => {
+    wl.innerHTML += `
+      <div class="leader-row">
+        <div class="rank ${i === 0 ? 'gold' : ''}">${i === 0 ? '🥇' : i + 1}</div>
+        <div class="leader-name">${p.name}</div>
+        <div class="leader-tickets" style="color: var(--green)">${p.profit}</div>
+      </div>`;
+  });
+</script>
+</body>
+</html>
