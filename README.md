@@ -12,7 +12,7 @@
 
 WhiskySour is a Telegram-based community game that runs on Solana. Every 5 minutes, a round fires — players pay a small entry fee, 80% win, 20% lose. Losers don't lose everything — they lose only 25% of their entry and earn bonus jackpot tickets. The more you play, the better your jackpot odds.
 
-**Play More. Keep Winning.**
+**Keep Winning.**
 
 ---
 
