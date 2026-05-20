@@ -61,17 +61,18 @@ impl TxInstruction{
         }
         let from_index = Account::find_index(&accounts, instruction.from_address).ok_or("from not found".to_string())?;
         let to_index = Account::find_index(&accounts, instruction.to_address).ok_or("to not found".to_string())?;
+
+        if accounts[from_index].owner!=ProgramType::Token{
+            return Err("From Account owner not Token".to_string());
+        }
+        if accounts[to_index].owner!=ProgramType::Token{
+            return Err("To id owner not Token".to_string());
+        }
         if from_index==to_index{
             return Err("From id cannot be same as to id".to_string())
         }
         if accounts[from_index].token_balance<instruction.amount{
             return Err("Insufficient Balance".to_string());
-        }
-        if accounts[from_index].owner!=ProgramType::Token{
-            return Err("From Account owner not System".to_string());
-        }
-        if accounts[to_index].owner!=ProgramType::Token{
-            return Err("To id owner not System".to_string());
         }
         Ok(Plan { from_index, to_index, amount: instruction.amount,program:ProgramType::Token})
     }
@@ -82,18 +83,20 @@ impl TxInstruction{
         }
         let from_index = Account::find_index(&accounts, instruction.from_address).ok_or("from not found".to_string())?;
         let to_index = Account::find_index(&accounts, instruction.to_address).ok_or("to not found".to_string())?;
-        if from_index==to_index{
-            return Err("From id cannot be same as to id".to_string())
-        }
-        if accounts[from_index].lamports<instruction.amount{
-            return Err("Insufficient Balance".to_string());
-        }
+        
         if accounts[from_index].owner!=ProgramType::System{
             return Err("From Account owner not System".to_string());
         }
         if accounts[to_index].owner!=ProgramType::System{
             return Err("To id owner not System".to_string());
         }
+        if from_index==to_index{
+            return Err("From id cannot be same as to id".to_string())
+        }
+        if accounts[from_index].lamports<instruction.amount{
+            return Err("Insufficient Balance".to_string());
+        }
+
         Ok(Plan { from_index, to_index, amount: instruction.amount,program:ProgramType::System})
     }
 
@@ -121,15 +124,24 @@ struct RunTime;
 impl RunTime{
     fn Runtime(accounts:&mut[Account],transactions:&[TxInstruction])->Result<(),String>{
         let mut plans = Vec::new();
-        let ins_sys = &transactions[0];
-        let ins_token = &transactions[1];
-        match TxInstruction::system_validator(accounts, &ins_sys){
-            Ok(value)=>plans.push(value),
-            Err(msg)=>return Err(msg),
-        }
-        match TxInstruction::token_validator(accounts, &ins_token){
-            Ok(value)=>plans.push(value),
-            Err(msg)=>return Err(msg),
+        for txs in transactions.iter(){
+            match txs.program{
+                ProgramType::System=>{
+                    let txs_sys = TxInstruction::system_validator(&accounts, txs);
+                    match txs_sys{
+                        Ok(value)=>plans.push(value),
+                        Err(msg)=>return Err(msg),
+                    }
+                }
+                ProgramType::Token=>{
+                    let txs_token = TxInstruction::token_validator(&accounts, txs);
+                    match txs_token{
+                        Ok(value)=>plans.push(value),
+                        Err(msg)=>return Err(msg),
+                    }
+                }
+                ProgramType::Others=>println!("Other type not valid"),
+            }
         }
 
         for plan in plans.iter(){
