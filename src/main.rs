@@ -1,11 +1,13 @@
 fn main(){
-    let name = "Solana";
-    let name_bytes = name.as_bytes();
-    for byte in name_bytes{
-        println!("{} - {}",byte, *byte as char)
-    }
-    let name_2 = "Solana";
-    let u16_bytes: Vec<u16> = name_2.encode_utf16().collect();  // Each char as u16
-    println!("{:?}",u16_bytes)
-
+    let fixed = 100_u8;
+    let fixed_le_bytes = fixed.to_le_bytes();
+    println!("Fixed as bytes: {:?}",fixed_le_bytes);
+    let mut growable = fixed_le_bytes.to_vec();
+    growable.push(99);
+    growable.push(88);
+    growable.pop();
+    println!("Fixed to growable {:?}",growable);
+    let name = "String";
+    let name_as_u8 = name.as_bytes();
+    println!("{:?}",name_as_u8);
 }
