@@ -1,14 +1,11 @@
 fn main(){
     let name = "Solana";
     let name_bytes = name.as_bytes();
-    println!("Solana as &[u8] : {:?}",name_bytes);
-    let mut data:Vec<u8> = Vec::new();
-    for letters in name_bytes{
-        data.push(*letters);
+    for byte in name_bytes{
+        println!("{} - {}",byte, *byte as char)
     }
-    println!("Solana in Vec<u8>: {:?}",data);
-
-    let recoverd_string = String::from_utf8(data).unwrap();
-    println!("recoverd_string: {}",recoverd_string);
+    let name_2 = "Solana";
+    let u16_bytes: Vec<u16> = name_2.encode_utf16().collect();  // Each char as u16
+    println!("{:?}",u16_bytes)
 
 }
