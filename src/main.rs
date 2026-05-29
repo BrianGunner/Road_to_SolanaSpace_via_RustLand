@@ -1,13 +1,12 @@
 
-
-
 #[derive(PartialEq)]
 #[derive(Debug)]
+#[derive(Clone)]
 enum ProgramType{
     SystemProgram,
     TokenProgram,
 }
-
+#[derive(Clone)]
 struct Account{
     address:u32,
     lamports:u64,
@@ -97,9 +96,10 @@ impl SystemProgram{
     
 
     }
-    fn execute_plan(accounts:&mut [Account],plan:&Plan){
+    fn execute_plan(accounts:&mut [Account],plan:&Plan)->Result<(),String>{
         accounts[plan.from_index].lamports-=plan.amount;
         accounts[plan.to_index].lamports+=plan.amount;
+        Ok(())
     }
 }
 struct TokenProgram;
@@ -143,13 +143,17 @@ impl TokenProgram{
 
     }
 
-    fn execute_plan(accounts:&mut [Account],plan:&Plan){
+    fn execute_plan(accounts:&mut [Account],plan:&Plan)->Result<(),String>{
+        if plan.amount>500{
+            return Err("Temproary failure".to_string());
+        }
         let from_token_balance = TokenProgram::read_balance(&accounts[plan.from_index]);
         let to_token_balance = TokenProgram::read_balance(&accounts[plan.to_index]);
         let updated_from_balance = from_token_balance-plan.amount;
         let updated_to_balance = to_token_balance+plan.amount;
         TokenProgram::write_balance(&mut accounts[plan.from_index], updated_from_balance);
         TokenProgram::write_balance(&mut accounts[plan.to_index], updated_to_balance);
+        Ok(())
 
     }
 
@@ -171,8 +175,9 @@ impl RunTime{
             },
         }     
     }
-    fn process_transactions(accounts:&mut [Account],tx:&Transaction)->Result<(),String>{
+    fn process_transactions(accounts:&mut Vec<Account>,tx:&Transaction)->Result<(),String>{
         let mut plan_vec: Vec<Plan> = Vec::new();
+       
         for t in tx.instruction_vec.iter(){
             let result = RunTime::validate_transactions(&accounts, t);
             match result{
@@ -180,12 +185,44 @@ impl RunTime{
                 Err(msg)=>return Err(msg)
             }
         }
+        let mut accounts_copy = accounts.clone();
         for plan in plan_vec.iter(){
             match plan.program{
-                ProgramType::SystemProgram=>SystemProgram::execute_plan(accounts, plan),
-                ProgramType::TokenProgram=>TokenProgram::execute_plan(accounts, plan),
-            }
+                ProgramType::SystemProgram=>{
+                    match SystemProgram::execute_plan(&mut accounts_copy, plan){
+                        Ok(_)=>println!("Sucess"),
+                        Err(msg)=>return Err(msg),
+                    }
+                },
+                ProgramType::TokenProgram=>{
+                    match TokenProgram::execute_plan(&mut accounts_copy, plan){
+                    Ok(_)=>println!("Success"),
+                    Err(msg)=>return Err(msg),
+                    }
+                },
         }
+    }
+
+        println!("Temp Account State: ===========");
+        for acc in accounts_copy.iter(){
+            
+            if acc.owner == ProgramType::SystemProgram{
+                println!("Address: {}, Lamports Balance: {}",acc.address,acc.lamports)
+            }
+            else{
+                let mut bytes = [0u8;8];    
+                if acc.data.len()>=8{
+                bytes.copy_from_slice(&acc.data[0..8]);
+                let balance = u64::from_le_bytes(bytes);
+                println!("Address: {}, Token Balance: {}",acc.address,balance)
+                }
+                else{
+                    println!("Address: {}, Token Balance: NA",acc.address)
+                }
+            }
+        
+    }
+        *accounts = accounts_copy;
         Ok(())
             
         }
@@ -242,14 +279,14 @@ fn main(){
 
     let mut tx_1 = Transaction{instruction_vec:Vec::new()};
     tx_1.add_transaction(1, 2, 100, ProgramType::SystemProgram);
-    tx_1.add_transaction(3, 3, 599, ProgramType::TokenProgram);
+    tx_1.add_transaction(3, 4, 501, ProgramType::TokenProgram);
     match RunTime::process_transactions(&mut accounts, &tx_1){
         Ok(value)=>println!("Success"),
         Err(msg)=>println!("{}",msg),
     }
-
     Account::print_state(&accounts);
 
 
 
-}
+
+}   
