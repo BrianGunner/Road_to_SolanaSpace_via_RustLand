@@ -1,12 +1,11 @@
 
-#[derive(PartialEq)]
-#[derive(Debug)]
-#[derive(Clone)]
+
+#[derive(Debug, PartialEq, Clone)]
 enum ProgramType{
-    SystemProgram,
-    TokenProgram,
+    System,
+    Token,
 }
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 struct Account{
     address:u32,
     lamports:u64,
@@ -14,43 +13,19 @@ struct Account{
     owner:ProgramType,
 }
 impl Account{
-    fn create_account(accounts:&mut Vec<Account>,address:u32,lamports:u64,data:Vec<u8>,owner:ProgramType)->Result<(),String>{
+    fn print_state(accounts:&[Account]){
         for acc in accounts.iter(){
-            if acc.address==address{
-                return Err("Address already exists".to_string())
-            }
+            println!("Address: {}, Lamports: {}, data: {:?}, owner: {:?}",acc.address,acc.lamports,acc.data,acc.owner)
         }
-        accounts.push(Account { address, lamports, data, owner });
-        Ok(())
     }
     fn find_index(accounts:&[Account],address:u32)->Result<usize,String>{
         for (index,acc) in accounts.iter().enumerate(){
-            if acc.address == address{
-                return Ok(index)
+            if acc.address==address{
+                return Ok(index);
             }
         }
-        Err("Could not find index".to_string())
+        Err("Address does not exist".to_string())
     }
-    fn print_state(accounts:&[Account]){
-        println!("🤑+++++++++++++++++🤑");
-        for acc in accounts.iter(){
-            if acc.owner == ProgramType::SystemProgram{
-                println!("Address: {}, Lamports Balance: {}",acc.address,acc.lamports)
-            }
-            else{
-                let mut bytes = [0u8;8];    
-                if acc.data.len()>=8{
-                bytes.copy_from_slice(&acc.data[0..8]);
-                let balance = u64::from_le_bytes(bytes);
-                println!("Address: {}, Token Balance: {}",acc.address,balance)
-                }
-                else{
-                    println!("Address: {}, Token Balance: NA",acc.address)
-                }
-            }
-        
-    }
-}
 }
 #[derive(Debug)]
 struct Instruction{
@@ -58,7 +33,9 @@ struct Instruction{
     to_address:u32,
     amount:u64,
     program:ProgramType,
+    signer_address:u32,
 }
+#[derive(Debug)]
 struct Plan{
     from_index:usize,
     to_index:usize,
@@ -70,223 +47,190 @@ struct Plan{
 
 struct SystemProgram;
 impl SystemProgram{
-    fn validate_instruction(accounts:&[Account],instruction:&Instruction)->Result<Plan,String>{
-        if instruction.program!=ProgramType::SystemProgram{
-            return Err("Program Type not System".to_string());
-        }
-        let from_index_instruction = Account::find_index(&accounts, instruction.from_address)?;
-        let to_index_instruction = Account::find_index(&accounts, instruction.to_address)?;
-
-        if from_index_instruction==to_index_instruction{
-            return Err("From and two addresses cannot be the same".to_string());
-        }
-        if accounts[from_index_instruction].lamports<instruction.amount{
-            return Err("Insufficient Balance".to_string())
-        }
-        if accounts[from_index_instruction].owner!=ProgramType::SystemProgram{
-            return Err("From Account owner not System".to_string())
-        }
-        if accounts[to_index_instruction].owner!=ProgramType::SystemProgram{
-            return Err("To Account owner not System".to_string())
-        }
-        if instruction.amount==0{
-            return Err("Transfer amount cannot be Zero".to_string());
-        }
-        Ok(Plan { from_index: from_index_instruction, to_index: to_index_instruction, amount: instruction.amount,program:ProgramType::SystemProgram })
     
-
+    fn validate_instruction(accounts:&[Account],instruction:&Instruction)->Result<Plan,String>{
+        if instruction.program!=ProgramType::System{
+            return Err("Program not System".to_string())
+        }
+        let from_index = Account::find_index(&accounts, instruction.from_address)?;
+        let to_index = Account::find_index(&accounts, instruction.to_address)?;
+        if from_index==to_index{
+            return Err("From and To addresses cannot be same".to_string());
+        }
+        if accounts[from_index].owner!=ProgramType::System{
+            return Err("From address owner not System".to_string());
+        }
+        if instruction.signer_address!=instruction.from_address{
+            return Err("From address did not sign tx".to_string());
+        }
+        if accounts[to_index].owner!=ProgramType::System{
+            return Err("To address owner not System".to_string());
+        }
+        if accounts[from_index].lamports<instruction.amount{
+            return Err("Not enough balance".to_string());
+        }        
+        Ok(Plan{from_index:from_index,to_index:to_index,amount:instruction.amount,program:ProgramType::System})
     }
-    fn execute_plan(accounts:&mut [Account],plan:&Plan)->Result<(),String>{
+    fn execute_plan(accounts:&mut[Account],plan:&Plan){
         accounts[plan.from_index].lamports-=plan.amount;
         accounts[plan.to_index].lamports+=plan.amount;
-        Ok(())
     }
 }
+
 struct TokenProgram;
-impl TokenProgram{
+    impl TokenProgram{
     fn read_balance(account:&Account)->u64{
-        let mut bytes = [0u8;8];
-        bytes.copy_from_slice(&account.data[0..8]);
-        u64::from_le_bytes(bytes)
+        let account_vec = &account.data;
+        let mut balance = [0u8;8];
+        balance.copy_from_slice(&account_vec[0..8]);
+        let amount = u64::from_le_bytes(balance);
+        return amount;
     }
     fn write_balance(account:&mut Account,amount:u64){
         let amount_bytes = amount.to_le_bytes().to_vec();
-        account.data=amount_bytes
+        account.data = amount_bytes;
+
     }
     fn validate_instruction(accounts:&[Account],instruction:&Instruction)->Result<Plan,String>{
-        if instruction.program!=ProgramType::TokenProgram{
-            return Err("Program Type not Token".to_string());
+        if instruction.program!=ProgramType::Token{
+            return Err("Program not Token".to_string());
         }
-        let from_index_instruction = Account::find_index(&accounts, instruction.from_address)?;
-        let to_index_instruction = Account::find_index(&accounts, instruction.to_address)?;
-        if from_index_instruction==to_index_instruction{
-            return Err("From and to addresses cannot be the same".to_string());
-        }
-        if accounts[from_index_instruction].owner!=ProgramType::TokenProgram{
-            return Err("From id owner not Token".to_string());
-        }
-        if accounts[to_index_instruction].owner!=ProgramType::TokenProgram{
-            return Err("To id owner not Token".to_string());
-        }
-        let mut data_store = [0u8;8];
-        data_store.copy_from_slice(&accounts[from_index_instruction].data[0..8]);
-        let from_token_value = u64::from_le_bytes(data_store);
+        let from_index = Account::find_index(&accounts,instruction.from_address)?;
+        let to_index = Account::find_index(&accounts, instruction.to_address)?;
 
-        if from_token_value<instruction.amount{
-            return Err("Insufficient Balance".to_string());
+        if from_index==to_index{
+            return Err("From address cannot be same as to address".to_string());
+        }
+        if accounts[from_index].owner!=ProgramType::Token{
+            return Err("From address not Token".to_string());
+        }
+        if instruction.signer_address!=instruction.from_address{
+            return Err("From address did not sign tx".to_string());
+        }
+        if accounts[to_index].owner!=ProgramType::Token{
+            return Err("To address not Token".to_string());
         }
         if instruction.amount==0{
             return Err("Transfer amount cannot be Zero".to_string());
         }
-        Ok(Plan{from_index:from_index_instruction,to_index:to_index_instruction,amount:instruction.amount,program:ProgramType::TokenProgram})
-    
+        let from_balance = TokenProgram::read_balance(&accounts[from_index]);
+        
+        if from_balance<instruction.amount{
+            return Err("Not enough balance".to_string());
+        }
+        Ok(Plan{from_index:from_index,to_index:to_index,amount:instruction.amount,program:ProgramType::Token})
 
     }
 
-    fn execute_plan(accounts:&mut [Account],plan:&Plan)->Result<(),String>{
-        if plan.amount>500{
-            return Err("Temproary failure".to_string());
-        }
-        let from_token_balance = TokenProgram::read_balance(&accounts[plan.from_index]);
-        let to_token_balance = TokenProgram::read_balance(&accounts[plan.to_index]);
-        let updated_from_balance = from_token_balance-plan.amount;
-        let updated_to_balance = to_token_balance+plan.amount;
+    fn execute_plan(accounts:&mut [Account],plan:&Plan){
+        let current_from_balance = TokenProgram::read_balance(&accounts[plan.from_index]);
+        let current_to_balance = TokenProgram::read_balance(&accounts[plan.to_index]);
+        let updated_from_balance = current_from_balance - plan.amount;
+        let updated_to_balance = current_to_balance+plan.amount;
         TokenProgram::write_balance(&mut accounts[plan.from_index], updated_from_balance);
         TokenProgram::write_balance(&mut accounts[plan.to_index], updated_to_balance);
-        Ok(())
+    }
+    fn serialize(tokendata:&TokenAccountData)->Vec<u8>{
+        let mut data: Vec<u8> = Vec::new();
+        let balance_bytes = tokendata.balance.to_le_bytes();
+        for bytes in balance_bytes.iter(){
+            data.push(*bytes);
+        }
+        if tokendata.frozen==true{
+            data.push(1);
+        }
+        else{
+            data.push(0);
+        }
+        return data;
+
+  
 
     }
-
     
 }
 
+#[derive(Debug)]
+struct TokenAccountData{
+    balance:u64,
+    frozen:bool,
+}
+struct Transaction{
+    instructions:Vec<Instruction>,  
+}
 struct RunTime;
-
 impl RunTime{
-    
-    fn validate_transactions(accounts:&[Account],instruction:&Instruction)->Result<Plan,String>{
-        match instruction.program{
-            ProgramType::SystemProgram=>{
-            let result = SystemProgram::validate_instruction(&accounts, instruction)?;
-            Ok(result)},
-            ProgramType::TokenProgram=>{
-                let result = TokenProgram::validate_instruction(&accounts, instruction)?;
-                Ok(result)
-            },
-        }     
-    }
-    fn process_transactions(accounts:&mut Vec<Account>,tx:&Transaction)->Result<(),String>{
-        let mut plan_vec: Vec<Plan> = Vec::new();
-       
-        for t in tx.instruction_vec.iter(){
-            let result = RunTime::validate_transactions(&accounts, t);
-            match result{
-                Ok(value)=>plan_vec.push(value),
-                Err(msg)=>return Err(msg)
-            }
-        }
-        let mut accounts_copy = accounts.clone();
-        for plan in plan_vec.iter(){
-            match plan.program{
-                ProgramType::SystemProgram=>{
-                    match SystemProgram::execute_plan(&mut accounts_copy, plan){
-                        Ok(_)=>println!("Sucess"),
+
+    fn process_transaction(accounts:&mut [Account],transaction:&Transaction)->Result<(),String>{
+        let mut plan_vector: Vec<Plan> = Vec::new();
+        for tx in transaction.instructions.iter(){
+            match tx.program{
+                ProgramType::System=>{
+                    let plan_system = SystemProgram::validate_instruction(accounts, tx);
+                    match plan_system{
+                        Ok(value)=>plan_vector.push(value),
                         Err(msg)=>return Err(msg),
                     }
-                },
-                ProgramType::TokenProgram=>{
-                    match TokenProgram::execute_plan(&mut accounts_copy, plan){
-                    Ok(_)=>println!("Success"),
-                    Err(msg)=>return Err(msg),
+                }
+                ProgramType::Token=>{
+                    let plan_token = TokenProgram::validate_instruction(accounts, tx);
+                    match plan_token{
+                        Ok(value)=>plan_vector.push(value),
+                        Err(msg)=>return Err(msg),
                     }
-                },
+                }
+            }
         }
-    }
-
-        println!("Temp Account State: ===========");
-        for acc in accounts_copy.iter(){
-            
-            if acc.owner == ProgramType::SystemProgram{
-                println!("Address: {}, Lamports Balance: {}",acc.address,acc.lamports)
+        for plan_e in plan_vector.iter(){
+            match plan_e.program{
+                ProgramType::System=>SystemProgram::execute_plan(accounts, plan_e),
+                ProgramType::Token=>TokenProgram::execute_plan(accounts, plan_e),
             }
-            else{
-                let mut bytes = [0u8;8];    
-                if acc.data.len()>=8{
-                bytes.copy_from_slice(&acc.data[0..8]);
-                let balance = u64::from_le_bytes(bytes);
-                println!("Address: {}, Token Balance: {}",acc.address,balance)
-                }
-                else{
-                    println!("Address: {}, Token Balance: NA",acc.address)
-                }
-            }
-        
-    }
-        *accounts = accounts_copy;
+        }
         Ok(())
-            
-        }
     }
-
-
-
     
+
+    }
     
-#[derive(Debug)]
-struct Transaction{
-    instruction_vec:Vec<Instruction>
-}
-
-impl Transaction {
-    fn add_transaction(&mut self,from_address:u32,to_address:u32,amount:u64,program:ProgramType){
-        let instruction_new = Instruction{from_address,to_address,amount,program};
-        self.instruction_vec.push(instruction_new);
-    }
-    fn print_tx_set(&self){
-        println!("{:?}",self.instruction_vec)
-    }
-}
-
-
-
-
 
 
 
 fn main(){
-
     let mut accounts: Vec<Account> = Vec::new();
-
-
-    match Account::create_account(&mut accounts, 1, 1000, vec![], ProgramType::SystemProgram){
-        Ok(_)=>println!("Account created"),
+    
+    let account_1 = Account{address:1,lamports:9999,data:vec![],owner:ProgramType::System};
+    accounts.push(account_1);
+ 
+    let account_2 = Account{address:2,lamports:500,data:vec![],owner:ProgramType::System};
+    accounts.push(account_2);
+    Account::print_state(&accounts);
+    match Account::find_index(&accounts, 2){
+        Ok(value)=>println!("Found Account index {}",value),
         Err(msg)=>println!("{}",msg),
     }
-    match Account::create_account(&mut accounts, 2, 1000, vec![], ProgramType::SystemProgram){
-       Ok(_)=>println!("Account created"),
-        Err(msg)=>println!("{}",msg), 
-    }
-    
-    
-    let token = 10000_u64;
-    let bytes = token.to_le_bytes().to_vec();
-    let token_2 = 0_u64;
-    let bytes_2 = token_2.to_le_bytes().to_vec();
-    Account::create_account(&mut accounts, 3, 0, bytes, ProgramType::TokenProgram);
-    Account::create_account(&mut accounts, 4, 0, bytes_2, ProgramType::TokenProgram);
-    
-    Account::print_state(&accounts);
-
-    let mut tx_1 = Transaction{instruction_vec:Vec::new()};
-    tx_1.add_transaction(1, 2, 100, ProgramType::SystemProgram);
-    tx_1.add_transaction(3, 4, 501, ProgramType::TokenProgram);
-    match RunTime::process_transactions(&mut accounts, &tx_1){
-        Ok(value)=>println!("Success"),
-        Err(msg)=>println!("{}",msg),
+    let tokens = 100000_u64;
+    let tokens_2 = 0_u64;
+    let tokens_2_bytes = tokens_2.to_le_bytes().to_vec();
+    let tokens_bytes = tokens.to_le_bytes().to_vec();
+    let account_3 = Account{address:3,lamports:0,data:tokens_bytes,owner:ProgramType::Token};
+    let account_4 = Account{address:4,lamports:0,data:tokens_2_bytes,owner:ProgramType::Token};
+    accounts.push(account_3);
+    accounts.push(account_4);
+    let inst_1 = Instruction{from_address:1,to_address:2,amount:110,program:ProgramType::System,signer_address:1};
+    let inst_2 = Instruction{from_address:3,to_address:4,amount:500,program:ProgramType::Token,signer_address:3};
+    let tx_1 = Transaction{instructions:vec![inst_1,inst_2]};
+    match RunTime::process_transaction(&mut accounts, &tx_1){
+        Ok(_)=>println!("Tx successful"),
+        Err(msg)=>println!("{:?}",msg),
     }
     Account::print_state(&accounts);
+    
 
+    let tad_1 = TokenAccountData{balance:10000,frozen:true};
+    let sample = TokenProgram::serialize(&tad_1);
+    println!("{:?}",sample)
+    
 
-
-
-}   
+    
+}
